@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Barcode Generator with history support</title>
+    <script src="JsBarcode.js"></script>
+    <script src="https://code.jquery.com/jquery-3.1.1.min.js" integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8=" crossorigin="anonymous"></script>
+    <script type="text/javascript">
+      window.eanHistory = [];
+      function loadHistory() {
+        var serializedHistory = localStorage.history;
+        if (serializedHistory !== undefined) {
+          eanHistory = JSON.parse(serializedHistory);
+        }
+        if (eanHistory.length > 0) {
+          setEan(eanHistory[0]);
+        }
+      }
+      function updateHistory() {
+        localStorage.history = JSON.stringify(eanHistory);
+        $("#history").empty();
+        eanHistory.forEach(function(item) {
+          $("#history").append("<li>" + item + "</li>");
+        });
+      }
+      function setEan(ean) {
+        $("#ean").val(ean);
+        updateEan(ean);
+      }
+      function updateEan(ean) {
+        ean = ean.trim();
+        if (ean.length == 0) {
+          return;
+        }
+        if (eanHistory.includes(ean)) {
+          eanHistory.splice(eanHistory.indexOf(ean), 1);
+        }
+        var format = ean.length == 7 || ean.length == 8 ? "EAN8" :
+          ean.length == 12 || ean.length == 13 ? "EAN13" : "CODE128";
+        try {
+          JsBarcode("#barcode", ean, {format: format});
+        } catch (e) {
+          console.log(e);
+          updateHistory();
+          return;
+        }
+        eanHistory.unshift(ean);
+        if (eanHistory.length > 50) {
+          eanHistory.splice(50);
+        }
+        updateHistory();
+      }
+      $(document).ready(function() {
+        loadHistory();
+        updateHistory();
+        $("#ean").on("keyup", function() {
+          updateEan($(this).val());
+        });
+        $("#ean").on("focus", function() {
+            $(this).select();
+        });
+        $("#history").on("click", "li", function() {
+          setEan($(this).text());
+        });
+      });
+    </script>
+    <style type="text/css">
+      #ean {
+        width: 15em;
+        margin: 0.3em auto;
+        display: block;
+        text-align: center;
+        font-size: 2em;
+      }
+      #barcode {
+        margin: 2em auto;
+        padding: 5.5em;
+        border: 1px solid black;
+        display: block;
+      }
+      #history,h3 {
+        width: 15em;
+        font-size: 1em;
+        margin: 0.5em auto;
+        font-size: 1em;
+        list-style: none;
+        text-align: center;
+        cursor: pointer;
+        line-height: 2em;
+        padding: 0;
+      }
+	  * {background: #ffffff;}
+
+	/* general button style */ 
+	button {
+			border: 0;
+		  width: 120px;
+		  padding: 6px;
+		  margin: 1px auto;
+			-webkit-border-radius: 5px;
+			   -moz-border-radius: 5px;
+					  border-radius: 5px; 
+		  display: block;
+		  text-decoration: none;
+			text-align: center;
+		font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; 
+		  font-size: 1.0em;
+	}
+		
+	button:hover {
+		  -webkit-transition: background-color 1s ease-in;  
+			   -moz-transition: background-color 1s ease-in;  
+				 -o-transition: background-color 1s ease-in;  
+					transition: background-color 1s ease-in; 
+	}
+
+	button:active {
+			margin-top: 10px;
+		margin-bottom: -2px;
+	}
+		
+
+	.red {
+			color: #FFF;
+			background: #bc3737;
+		  -webkit-box-shadow: 0 3px 1px #950d0d;
+			   -moz-box-shadow: 0 3px 1px #950d0d;
+					  box-shadow: 0 3px 1px #950d0d;
+	}
+	.red:hover {background: #b23737;}
+	.red:active {
+			margin-top: 10px;
+		  -webkit-box-shadow: 0 1px 1px #950d0d;
+			   -moz-box-shadow: 0 1px 1px #950d0d;
+						box-shadow: 0 1px 1px #950d0d;
+	}
+    </style>
+  </head>
+  <body>
+    <svg id="barcode" />
+		<button class="red" onClick="localStorage.clear(); document.location.reload(true)"> Clear History</button>
+
+    <input autofocus id="ean" placeholder="Input data here" />
+	<h3>Recents List: </h3>
+    <ul id="history"></ul>
+  </body>
+</html>
